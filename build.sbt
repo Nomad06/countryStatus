@@ -6,6 +6,7 @@ lazy val root = (project in file("."))
   .enablePlugins(PlayScala)
   .settings(
     name := """countriesTest""",
+    PlayKeys.playDefaultPort := 8080,
     libraryDependencies ++= Seq(
       ws,
       caffeine,
