@@ -1,7 +1,6 @@
 package services
 
-import api.ExternalWebAPI
-import com.fasterxml.jackson.annotation.JsonValue
+import api.CountryIoAPI
 import com.google.inject.ImplementedBy
 import play.api.Configuration
 import play.api.cache.AsyncCacheApi
@@ -23,14 +22,13 @@ trait CountryService {
 @Singleton
 class CountryServiceImpl @Inject()(val config: Configuration,
                                    cache: AsyncCacheApi,
-                                   val countryAPI: ExternalWebAPI)(implicit exec: ExecutionContext) extends CountryService {
+                                   val countryAPI: CountryIoAPI)(implicit exec: ExecutionContext) extends CountryService {
 
   val cacheExpiry: Duration = config.get[Duration]("countryCache.expiry")
 
   override def getCountryByCode(countryCode: String): Future[String] = {
     cache.getOrElseUpdate[JsValue]("countries", cacheExpiry) {
-      val url = config.get[String]("countries.url")
-      countryAPI.getRequest(url, Map("q" -> "value"), Map.empty)
+      countryAPI.getCountries
     }.map{
       response => (response \countryCode).as[String]
     }
@@ -38,8 +36,7 @@ class CountryServiceImpl @Inject()(val config: Configuration,
 
   override def getCapitalByCode(countryCode: String): Future[String] = {
     cache.getOrElseUpdate[JsValue]("capitals", cacheExpiry) {
-      val url = config.get[String]("countries.capitals.url")
-      countryAPI.getRequest(url, Map.empty, Map.empty)
+      countryAPI.getCapitals
     }.map{
       response => (response \countryCode).as[String]
     }
@@ -47,8 +44,7 @@ class CountryServiceImpl @Inject()(val config: Configuration,
 
   override def getCurrencyByCode(countryCode: String): Future[String] = {
     cache.getOrElseUpdate[JsValue]("currency", cacheExpiry) {
-      val url = config.get[String]("countries.currency.url")
-      countryAPI.getRequest(url, Map.empty, Map.empty)
+      countryAPI.getCurrencies
     }.map{
       response => (response \countryCode).as[String]
     }

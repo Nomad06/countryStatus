@@ -1,10 +1,11 @@
 package services
 
-import api.{ExternalWebAPI, WeatherAPI}
+import api.WeatherAPI
 import com.google.inject.ImplementedBy
 import play.api.Configuration
 import play.api.cache.AsyncCacheApi
 import play.api.libs.json.JsValue
+import utils.TemperatureUtils.convertToCelsius
 
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,7 +14,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[WeatherServiceImpl])
 trait WeatherService {
-  def getWeatherByCityName(cityName: String): Future[String]
+  def getTemperatureByCityName(cityName: String): Future[Float]
 }
 
 @Singleton
@@ -23,13 +24,14 @@ class WeatherServiceImpl @Inject()(val config: Configuration,
 
   val cacheExpiry: Duration = config.get[Duration]("weatherCache.expiry")
 
-  override def getWeatherByCityName(cityName: String): Future[String] = {
+  override def getTemperatureByCityName(cityName: String): Future[Float] = {
     cache.getOrElseUpdate[JsValue]("weather", cacheExpiry) {
       weatherApi.getCityWeather(cityName)
     }.map{
       response => {
         val res = response \"main" \"temp"
-        res.get.toString()
+        val fahrenheit = res.as[Float]
+        convertToCelsius(fahrenheit)
       }
     }
   }

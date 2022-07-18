@@ -1,7 +1,8 @@
 package api
 
 import com.google.inject.ImplementedBy
-import play.api.Configuration
+import exceptions.OpenExchangeRatesApiException
+import play.api.{Configuration, Logger}
 import play.api.http.Status.OK
 import play.api.libs.json.JsValue
 import play.api.libs.ws.WSClient
@@ -17,6 +18,8 @@ trait CurrencyAPI {
 @Singleton
 class OpenExchangeRatesAPI @Inject()(wsClient: WSClient, config: Configuration)(implicit exec: ExecutionContext) extends CurrencyAPI {
 
+  val logger: Logger = Logger("currency_api")
+
   def getCurrencyRates: Future[JsValue] = {
     val url = config.get[String]("openexchangerates.url")
     val api_key = config.get[String]("openexchangerates.api_key")
@@ -28,7 +31,9 @@ class OpenExchangeRatesAPI @Inject()(wsClient: WSClient, config: Configuration)(
           if (response.status == OK) {
             response.json
           } else {
-            throw new RuntimeException();
+            val errorMessage = response.statusText
+            logger.error(s"OpenExchangeRates API get request caused error: $errorMessage")
+            throw new OpenExchangeRatesApiException(response.statusText)
           }
         }
       }

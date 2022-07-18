@@ -1,18 +1,22 @@
 package controllers
 
-import akka.actor.ActorSystem
+import facades.CountryFacade
 import models.CountryStatus
-import play.api.Configuration
-import play.api.libs.json.Json
-import play.api.libs.ws.JsonBodyWritables
-import play.api.mvc.{AbstractController, AnyContent, BaseController, ControllerComponents, Request}
-import services.CountryFacade
+import play.api.libs.json.{Json, Writes}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 class CountryController @Inject()(val countryFacade: CountryFacade, val cc: ControllerComponents)(implicit exec: ExecutionContext) extends AbstractController(cc) {
 
+  implicit val countryStatusWrites: Writes[CountryStatus] = (countryStatus: CountryStatus) => Json.obj(
+    "country" -> countryStatus.country,
+    "capital" -> countryStatus.capital,
+    "temperature" -> countryStatus.temperature,
+    "currency" -> countryStatus.currency,
+    "currencyRate" -> countryStatus.currencyRate
+  )
 
   /**
    * Create an Action to render an HTML page.
@@ -21,10 +25,9 @@ class CountryController @Inject()(val countryFacade: CountryFacade, val cc: Cont
    * will be called when the application receives a `GET` request with
    * a path of `/`.
    */
-  def getCountries() = Action.async {
-      countryFacade.getCountryStatusByCode("RU").map { msg => {
-        val countryStatus = CountryStatus(msg._1, msg._2, msg._3, msg._4, msg._5)
-        Ok(Json.toJson(countryStatus.toString()))
+  def getCountries(country: String): Action[AnyContent] = Action.async {
+      countryFacade.getCountryStatusByCode(country).map { status => {
+        Ok(Json.toJson(status))
       }}
   }
 }

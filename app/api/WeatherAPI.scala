@@ -1,7 +1,8 @@
 package api
 
 import com.google.inject.ImplementedBy
-import play.api.Configuration
+import exceptions.OpenWeatherApiException
+import play.api.{Configuration, Logger}
 import play.api.http.Status.OK
 import play.api.libs.json.JsValue
 import play.api.libs.ws.WSClient
@@ -18,6 +19,8 @@ trait WeatherAPI {
 class OpenWeatherAPI @Inject()(val wsClient: WSClient,
                                val config: Configuration)(implicit exec: ExecutionContext) extends WeatherAPI {
 
+  val logger: Logger = Logger("open_weather_api")
+
   override def getCityWeather(cityName: String): Future[JsValue] = {
     val url = config.get[String]("openweathermap.url")
     val api_key = config.get[String]("openweathermap.api_key")
@@ -30,7 +33,9 @@ class OpenWeatherAPI @Inject()(val wsClient: WSClient,
           if (response.status == OK) {
             response.json
           } else {
-            throw new RuntimeException();
+            val errorMessage = response.statusText
+            logger.error(s"OpenWeatherAPI get request caused error: $errorMessage")
+            throw new OpenWeatherApiException(response.statusText)
           }
         }
       }

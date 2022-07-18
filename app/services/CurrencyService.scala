@@ -13,7 +13,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[CurrencyServiceImpl])
 trait CurrencyService {
-  def getExchangeRates(currencyISO: String): Future[String]
+  def getExchangeRates(currencyISO: String): Future[Float]
 }
 
 class CurrencyServiceImpl @Inject()(val config: Configuration,
@@ -23,13 +23,13 @@ class CurrencyServiceImpl @Inject()(val config: Configuration,
 
   val cacheExpiry: Duration = config.get[Duration]("currencyCache.expiry")
 
-  override def getExchangeRates(currencyISO: String): Future[String] = {
+  override def getExchangeRates(currencyISO: String): Future[Float] = {
     cache.getOrElseUpdate[JsValue]("currencyRate", cacheExpiry) {
       currencyAPI.getCurrencyRates
     }.map{
       response => {
         val res = response \"rates" \currencyISO
-        res.get.toString()
+        res.as[Float]
       }
     }
 
